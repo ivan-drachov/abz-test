@@ -26,7 +26,7 @@ export class FilesService {
                 height: 70
               });
             resized.toFile(path.join(filePath, fileNameResized));
-            return "http://localhost:5000/"+fileNameResized;
+            return "https://ivan-abz-test-app.herokuapp.com/"+fileNameResized;
         }catch(e){
             console.log(e.message)
             throw new HttpException('Ошибка при записи файла', 500)
