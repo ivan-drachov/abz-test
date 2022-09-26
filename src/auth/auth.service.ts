@@ -9,13 +9,19 @@ import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { jwtSecret } from 'src/utils/constants';
 import { Request, Response } from 'express';
+import { FilesService } from 'src/files/files.service';
+import { SigninDto } from './dto/signin.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService, private jwt: JwtService) {}
+  constructor(private prisma: PrismaService, private jwt: JwtService, private fileservice: FilesService) {}
 
-  async signup(dto: AuthDto) {
-    const { email, password } = dto;
+  async signup(dto: AuthDto, image: any) {
+    console.log('IMAGE'+image);
+    console.log(dto);
+    image = await this.fileservice.create(image);
+    const { email, password, phone, name, position_id=2 } = dto;
+    const position = Number(position_id);
 
     const userExists = await this.prisma.user.findUnique({
       where: { email },
@@ -25,19 +31,31 @@ export class AuthService {
       throw new BadRequestException('Email already exists');
     }
 
-    const hashedPassword = await this.hashPassword(password);
+    const phoneExists = await this.prisma.user.findUnique({
+      where: { phone },
+    });
 
+    if (phoneExists) {
+      throw new BadRequestException('Phone already exists');
+    }
+
+    const hashedPassword = await this.hashPassword(password);
+    
     await this.prisma.user.create({
       data: {
         email,
         hashedPassword,
-      },
+        phone,
+        name,
+        position_id: position,
+        image
+      }
     });
 
-    return { message: 'User created succefully' };
+    return { message: 'User created succefully', image };
   }
 
-  async signin(dto: AuthDto, req: Request, res: Response) {
+  async signin(dto: SigninDto, req: Request, res: Response) {
     const { email, password } = dto;
 
     const foundUser = await this.prisma.user.findUnique({
@@ -89,7 +107,7 @@ export class AuthService {
     return await bcrypt.compare(args.password, args.hash);
   }
 
-  async signToken(args: { userId: string; email: string }) {
+  async signToken(args: { userId: number; email: string }) {
     const payload = {
       id: args.userId,
       email: args.email,

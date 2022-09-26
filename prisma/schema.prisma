@@ -10,9 +10,20 @@ datasource db {
 }
 
 model User {
-  id    String  @unique @default(uuid()) 
+  id Int @id @default(autoincrement())
   email String  @unique
+  name String @default("Petya Pupkin")
+  image String @default("")
+  phone String @unique
   hashedPassword String 
   createdAt DateTime @default(now())
   updateAt DateTime @updatedAt()
+  position Position @relation(fields: [position_id], references: [id])
+  position_id Int
+}
+
+model Position {
+  id   Int    @id @default(autoincrement())
+  name String
+  users User[]
 }
